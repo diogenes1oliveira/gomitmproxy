@@ -5,7 +5,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/AdguardTeam/gomitmproxy/mitm"
+	"github.com/diogenes1oliveira/gomitmproxy/mitm"
 )
 
 // OnConnectFunc is a declaration of the Config.OnConnect handler.
@@ -19,6 +19,9 @@ type OnResponseFunc func(session *Session) (resp *http.Response)
 
 // OnErrorFunc is a declaration of the Config.OnError handler.
 type OnErrorFunc func(session *Session, err error)
+
+// CanMITMFunc is a declaration of the Config.CanMITM handler.
+type CanMITMFunc func(req *http.Request) bool
 
 // Config is the configuration of the Proxy.
 type Config struct {
@@ -83,4 +86,14 @@ type Config struct {
 	// OnError is called if there's an issue with retrieving the response from
 	// the remote server.
 	OnError OnErrorFunc
+
+	// CanMITMFunc is called to check if the CONNECT request should me MITM'd.
+	// If this is nil, it will be used the default implementation that checks
+	// for port 443 and MITMExceptions
+	CanMITM CanMITMFunc
+
+	// SendEmptyClientCertificate determines whether an error will be returned
+	// or if an empty certificate will be sent if a TLS client certificate
+	// is requested by the server
+	SendEmptyClientCertificate bool
 }

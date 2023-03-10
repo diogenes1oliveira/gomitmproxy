@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/AdguardTeam/golibs/log"
-	"github.com/AdguardTeam/gomitmproxy/proxyutil"
+	"github.com/diogenes1oliveira/gomitmproxy/proxyutil"
 	"github.com/pkg/errors"
 )
 
@@ -76,6 +76,11 @@ func NewProxy(config Config) *Proxy {
 			ExpectContinueTimeout: time.Second,
 			TLSClientConfig: &tls.Config{
 				GetClientCertificate: func(info *tls.CertificateRequestInfo) (certificate *tls.Certificate, e error) {
+					if config.SendEmptyClientCertificate {
+						log.Debug("server requested client certificate, sending an empty one")
+						return &tls.Certificate{}, nil
+					}
+					log.Debug("server requested client certificate")
 					// We purposefully cause an error here so that the
 					// http.Transport.RoundTrip method failed. In this case
 					// we'll receive the error and will be able to add the host
@@ -475,7 +480,7 @@ func (p *Proxy) handleConnect(session *Session) (err error) {
 		return err
 	}
 
-	if p.canMITM(session.req.URL.Host) {
+	if p.canMITM(session.req) {
 		log.Debug("id=%s: attempting MITM for connection", session.ID())
 		// nolint:bodyclose
 		// body is actually closed.
@@ -702,18 +707,27 @@ func (p *Proxy) raiseOnError(session *Session, err error) {
 }
 
 // canMITM checks if we can perform MITM for this host.
-func (p *Proxy) canMITM(hostname string) (ok bool) {
+func (p *Proxy) canMITM(request *http.Request) (ok bool) {
 	if p.MITMConfig == nil {
 		return false
 	}
 
+	// use the callback if given
+	if p.CanMITM != nil {
+		ok = p.CanMITM(request)
+		if !ok {
+			log.Debug("MITM blocked by user callback")
+		}
+		return
+	}
+
 	// Remove the port if it exists.
+	hostname := request.URL.Host
 	host, port, err := net.SplitHostPort(hostname)
 	if err == nil {
 		hostname = host
 	}
 
-	// TODO(ameshkov): change this, should be exposed via a callback.
 	if port != "443" {
 		log.Debug("do not attempt to MITM connections to a port different from 443")
 
