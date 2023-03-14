@@ -23,6 +23,9 @@ type OnErrorFunc func(session *Session, err error)
 // CanMITMFunc is a declaration of the Config.CanMITM handler.
 type CanMITMFunc func(req *http.Request) bool
 
+// AuthorizationFunc is a declartion of the Config.Authorize handler.
+type AuthorizationFunc func(proxyAuthorization string) (username string, err error)
+
 // Config is the configuration of the Proxy.
 type Config struct {
 	// ListenAddr is the TCP address the proxy should listen to.
@@ -31,12 +34,6 @@ type Config struct {
 	// TLSConfig is a *tls.Config to use for the HTTP over TLS proxy. If not set
 	// the proxy will work as a simple plain HTTP proxy.
 	TLSConfig *tls.Config
-
-	// Username is the username to be used in the "Proxy-Authorization" header.
-	Username string
-
-	// Password is the password to be used in the "Proxy-Authorization" header.
-	Password string
 
 	// MITMConfig defines the MITM configuration of the proxy. If it is not set
 	// MITM won't be enabled for this proxy instance.
@@ -91,6 +88,9 @@ type Config struct {
 	// If this is nil, it will be used the default implementation that checks
 	// for port 443 and MITMExceptions
 	CanMITM CanMITMFunc
+
+	// Authorize is called to check the Proxy-Authorization header
+	Authorize AuthorizationFunc
 
 	// SendEmptyClientCertificate determines whether an error will be returned
 	// or if an empty certificate will be sent if a TLS client certificate

@@ -73,9 +73,9 @@ func main() {
 		ListenAddr: addr,
 		TLSConfig:  tlsConfig,
 
-		Username: "user",
-		Password: "pass",
-		APIHost:  "gomitmproxy",
+		Authorize: gomitmproxy.BasicPasswordAuthorizer("user", "pass"),
+
+		APIHost: "gomitmproxy",
 
 		MITMConfig:     mitmConfig,
 		MITMExceptions: []string{"example.com"},

@@ -261,15 +261,13 @@ func (p *Proxy) handleRequest(ctx *Context) error {
 
 	if !customRes {
 		// check proxy authorization first.
-		if p.Username != "" {
-			auth, res := p.authorize(session)
-			if !auth {
-				log.Debug("id=%s: proxy auth required", session.ID())
-				session.res = res
-				defer res.Body.Close()
-				_ = p.writeResponse(session)
-				return errClose
-			}
+		auth, res := p.authorize(session)
+		if !auth {
+			log.Debug("id=%s: proxy auth required", session.ID())
+			session.res = res
+			defer res.Body.Close()
+			_ = p.writeResponse(session)
+			return errClose
 		}
 
 		if session.req.Header.Get("Upgrade") == "websocket" {
